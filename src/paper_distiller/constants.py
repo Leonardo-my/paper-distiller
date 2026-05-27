@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import Enum
 
 
-class Category(StrEnum):
+class Category(str, Enum):
     A_CORE = "A_core"
     B_RELATED = "B_related"
     C_BACKGROUND = "C_background"
