@@ -37,10 +37,16 @@ Install from GitHub:
 python -m pip install "paper-distiller[openai] @ git+https://github.com/Leonardo-my/paper-distiller.git"
 ```
 
+Install with the local Web UI:
+
+```bash
+python -m pip install "paper-distiller[openai,ui] @ git+https://github.com/Leonardo-my/paper-distiller.git"
+```
+
 Or install from a local clone for development:
 
 ```bash
-python -m pip install -e ".[dev,openai]"
+python -m pip install -e ".[dev,openai,ui]"
 ```
 
 Create a knowledge base:
@@ -121,6 +127,36 @@ Check the knowledge base:
 paper-distiller check ./my-kb
 paper-distiller status ./my-kb
 ```
+
+## Local Web UI
+
+Paper Distiller also includes a local Streamlit UI. It runs on your machine and
+uses the same project folders and pipeline as the CLI.
+
+Install with UI support:
+
+```bash
+python -m pip install "paper-distiller[openai,ui] @ git+https://github.com/Leonardo-my/paper-distiller.git"
+```
+
+Launch:
+
+```bash
+paper-distiller-ui
+```
+
+The browser UI lets users:
+
+- choose a knowledge-base folder;
+- select preset, discipline, language, depth, audience, and math level;
+- upload PDFs into `A_core`, `B_related`, or `C_background`;
+- choose `offline`, `openai`, or `command` backend;
+- run extraction, distillation, and optional synthesis;
+- preview generated Markdown files;
+- download all Markdown outputs as a zip file.
+
+The UI is a local convenience layer, not a hosted SaaS. API keys entered in the
+sidebar are set only for the current local process.
 
 ## One-Command Workflow
 
