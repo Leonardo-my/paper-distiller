@@ -1,0 +1,22 @@
+# Audit Report: {{ stem }}
+
+Audit the generated outputs against the paper text. Find hallucinations,
+formula risks, missing assumptions, unsupported claims, and missing reliability
+labels.
+
+## Generated Outputs
+
+{% for name, content in generated_outputs.items() %}
+### {{ name }}
+
+```markdown
+{{ content }}
+```
+
+{% endfor %}
+
+## Paper Text
+
+```text
+{{ paper_text }}
+```

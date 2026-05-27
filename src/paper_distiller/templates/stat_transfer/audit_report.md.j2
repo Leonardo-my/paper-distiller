@@ -1,0 +1,50 @@
+# Audit Report: {{ stem }}
+
+You are a skeptical quality auditor. Audit the generated distillation outputs
+against the extracted paper text. Find errors; do not re-summarize the paper.
+
+## Audit Principles
+
+- Critical errors are issues that would mislead future research.
+- Major issues could cause confusion or misuse.
+- Minor issues are wording, formatting, or organization problems.
+- Complex formulas and OCR-corrupted theorem statements should be marked
+  `needs PDF check`.
+- Unsupported venue, citation, importance, or author-intention claims must be
+  flagged.
+
+## Required Structure
+
+1. Overall Verdict: Pass / Pass with revisions / Needs major revision / Reject
+2. Critical Errors
+3. Major Issues
+4. Minor Issues
+5. Formula / Theorem Verification Checklist
+6. Hallucination Check
+7. Setting and Assumption Check
+8. Proof Skeleton Check
+9. Writing Pattern Check
+10. Reliability / Verification Status Audit
+11. Required Revisions
+12. Human Verification Needed
+13. Safe to Keep
+14. Revision Log
+
+Every table row should point to a concrete file or section when possible.
+
+## Generated Outputs
+
+{% for name, content in generated_outputs.items() %}
+### {{ name }}
+
+```markdown
+{{ content }}
+```
+
+{% endfor %}
+
+## Paper Text
+
+```text
+{{ paper_text }}
+```

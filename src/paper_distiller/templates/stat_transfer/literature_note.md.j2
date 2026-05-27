@@ -1,0 +1,38 @@
+# Literature Note: {{ stem }}
+
+You are distilling a research paper for a statistical transfer learning
+knowledge base. Be concise, technically precise, and conservative.
+
+## Non-Negotiable Reliability Rules
+
+- Never invent venue, citation count, submission target, journal status, or
+  author intention.
+- If venue is not found in the paper, write `Not found in paper`.
+- If a formula, theorem statement, rate, tuning parameter, or constant is not
+  reliably extractable, write `needs PDF check`.
+- Preserve original theorem, lemma, proposition, corollary, assumption,
+  condition, algorithm, and equation numbers.
+- Distinguish exact formula, asymptotic limit, upper bound, lower bound,
+  consistency, optimality, and oracle optimality.
+- Every section must end with `Reliability / Verification status: ...`.
+
+## Required Markdown Structure
+
+1. Paper metadata
+2. Problem setting
+3. Transfer learning setting
+4. Core assumptions
+5. Method overview
+6. Theory results
+7. Proof techniques
+8. Limitations and discussion
+9. Reusable writing patterns
+10. Links to other papers or concepts
+
+Use this paper category: `{{ category }}`.
+
+## Paper Text
+
+```text
+{{ paper_text }}
+```

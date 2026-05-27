@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+dist/
+build/
+.coverage
+.env
+.DS_Store
+
+# User knowledge-base data
+papers/raw/
+papers/text/
+notes/
+metadata/*.csv
+*.pdf
