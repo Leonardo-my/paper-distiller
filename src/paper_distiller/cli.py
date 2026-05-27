@@ -115,6 +115,58 @@ def distill(
         )
 
 
+@app.command("distill-batch")
+def distill_batch(
+    root: Annotated[Path, typer.Argument(help="Knowledge-base directory.")],
+    category: Annotated[
+        str | None,
+        typer.Option(help="Only process one category: A_core, B_related, or C_background."),
+    ] = None,
+    backend: Annotated[str, typer.Option(help="offline, command, or openai.")] = "offline",
+    model: Annotated[str | None, typer.Option(help="Model name for the openai backend.")] = None,
+    llm_command: Annotated[
+        str | None,
+        typer.Option(help="Command for the command backend. Reads prompt from stdin."),
+    ] = None,
+    force: Annotated[bool, typer.Option(help="Overwrite existing output files.")] = False,
+    limit: Annotated[int | None, typer.Option(help="Maximum number of papers to process.")] = None,
+) -> None:
+    """Generate Markdown outputs for all extracted text files."""
+
+    paths = _paths(root)
+    ensure_metadata_files(paths.metadata_dir)
+    categories = [_validate_category(category)] if category else list(CATEGORIES)
+    papers: list[PaperId] = []
+
+    for current_category in categories:
+        text_dir = paths.text_dir / current_category
+        if not text_dir.exists():
+            continue
+        for text_file in sorted(text_dir.glob("*.txt")):
+            papers.append(PaperId(category=current_category, stem=text_file.stem))
+
+    if limit is not None:
+        papers = papers[:limit]
+
+    if not papers:
+        console.print("[yellow]No extracted text files found.[/yellow]")
+        return
+
+    total_written = 0
+    for index, paper in enumerate(papers, start=1):
+        console.print(f"[cyan][{index}/{len(papers)}][/cyan] {paper.category}/{paper.stem}")
+        llm = build_backend(
+            backend,
+            target_name=f"{paper.category}/{paper.stem}",
+            model=model,
+            llm_command=llm_command,
+        )
+        written = distill_paper(paths, paper, llm, force=force)
+        total_written += len(written)
+
+    console.print(f"[green]Batch complete.[/green] Wrote {total_written} file(s).")
+
+
 @app.command()
 def status(root: Annotated[Path, typer.Argument(help="Knowledge-base directory.")]) -> None:
     """Show reading_status.csv."""

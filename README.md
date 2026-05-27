@@ -53,6 +53,12 @@ Generate scaffold Markdown without an API call:
 paper-distiller distill ./my-kb A_core my-paper --backend offline
 ```
 
+Batch-generate all extracted `A_core` papers:
+
+```bash
+paper-distiller distill-batch ./my-kb --category A_core --backend offline
+```
+
 Generate with OpenAI:
 
 ```bash
