@@ -47,6 +47,10 @@ class KnowledgeBasePaths:
         return self.root / "prompts"
 
     @property
+    def config_file(self) -> Path:
+        return self.root / "paper_distiller.toml"
+
+    @property
     def reading_status_csv(self) -> Path:
         return self.metadata_dir / "reading_status.csv"
 

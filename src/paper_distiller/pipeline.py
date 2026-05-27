@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from .config import DistillationConfig
 from .constants import Category
 from .llm import LlmBackend
 from .metadata import upsert_status
@@ -77,6 +78,7 @@ def distill_paper(
     paths: KnowledgeBasePaths,
     paper: PaperId,
     backend: LlmBackend,
+    config: DistillationConfig | None = None,
     force: bool = False,
 ) -> list[Path]:
     text_path = paths.text_file(paper)
@@ -86,6 +88,7 @@ def distill_paper(
     paper_text = text_path.read_text(encoding="utf-8", errors="replace")
     written: list[Path] = []
     generated: dict[str, str] = {}
+    prompt_profile = (config or DistillationConfig()).to_template_context()
 
     for spec in output_specs(paths, paper):
         if spec.output_path.exists() and not force:
@@ -102,6 +105,7 @@ def distill_paper(
             stem=paper.stem,
             paper_text=paper_text,
             generated_outputs=generated,
+            **prompt_profile,
         )
         content = backend.complete(prompt)
         spec.output_path.parent.mkdir(parents=True, exist_ok=True)

@@ -4,6 +4,23 @@ Audit the generated outputs against the paper text. Find hallucinations,
 formula risks, missing assumptions, unsupported claims, and missing reliability
 labels.
 
+## Distillation Profile
+
+- Discipline: `{{ discipline }}`
+- Output language: `{{ output_language }}`
+- Math level: `{{ math_level }}`
+
+{{ language_instruction }}
+
+{{ discipline_instruction }}
+
+{{ math_instruction }}
+
+For non-mathematical papers, replace formula/theorem audit items with the
+discipline-appropriate equivalent: empirical design, data provenance,
+identification assumptions, clinical endpoints, experimental setup, archival
+evidence, coding protocol, or conceptual taxonomy.
+
 ## Generated Outputs
 
 {% for name, content in generated_outputs.items() %}

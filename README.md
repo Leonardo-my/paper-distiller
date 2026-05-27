@@ -7,8 +7,9 @@ It is designed for workflows where an LLM drafts notes, theorem cards, proof
 roadmaps, writing-pattern cards, and audit reports, while the software enforces
 folder layout, metadata updates, repeatable prompts, and reliability checks.
 
-The first bundled preset, `stat-transfer`, is built for statistical transfer
-learning literature reviews. You can add your own presets for other fields.
+The bundled `generic` preset is field-agnostic and works across disciplines.
+The `stat-transfer` preset is a specialized statistical transfer learning
+workflow. You can add your own presets for other fields.
 
 ## What It Does
 
@@ -18,6 +19,7 @@ learning literature reviews. You can add your own presets for other fields.
 - Generates one-paper distillation outputs from prompt templates.
 - Generates cross-paper batch synthesis files from completed single-paper notes.
 - Supports `A_core`, `B_related`, and `C_background` paper tiers.
+- Supports discipline, language, depth, audience, and math-level profiles.
 - Updates `metadata/reading_status.csv` without marking human verification
   automatically.
 - Runs structural checks for missing outputs, missing audit files, and missing
@@ -44,7 +46,7 @@ python -m pip install -e ".[dev,openai]"
 Create a knowledge base:
 
 ```bash
-paper-distiller init ./my-kb --preset stat-transfer
+paper-distiller init ./my-kb --preset generic --discipline biology --output-language en
 ```
 
 Put PDFs here:
@@ -109,6 +111,64 @@ paper-distiller run ./my-kb --category A_core --backend openai --model gpt-5.5 -
 
 The CLI is not a background folder watcher. Users explicitly run the command
 after adding PDFs, which keeps API usage and generated files predictable.
+
+## Discipline And Language Profiles
+
+Paper Distiller is not limited to mathematical papers. Use the `generic` preset
+for broad disciplinary coverage:
+
+```bash
+paper-distiller init ./my-kb \
+  --preset generic \
+  --discipline "public health" \
+  --source-language auto \
+  --output-language zh \
+  --depth deep \
+  --math-level light
+```
+
+Supported profile options:
+
+```text
+--preset            generic | stat-transfer | custom preset directory name
+--discipline        free text, e.g. biology, economics, history, medicine
+--source-language   auto | en | zh
+--output-language   en | zh | bilingual | same-as-source
+--depth             short | standard | deep
+--audience          free text, e.g. researcher, clinician, graduate student
+--math-level        auto | none | light | heavy
+```
+
+The profile is stored in:
+
+```text
+paper_distiller.toml
+```
+
+All generation commands read this file. You can override the profile for a
+single run:
+
+```bash
+paper-distiller distill ./my-kb A_core example-paper \
+  --backend openai \
+  --model gpt-5.5 \
+  --discipline economics \
+  --output-language bilingual \
+  --math-level auto
+```
+
+For non-mathematical papers, the generic preset adapts theorem/proof cards into
+claim/evidence and method/evidence roadmaps instead of forcing formulas.
+
+For statistical transfer learning or other theorem-heavy fields, use:
+
+```bash
+paper-distiller init ./transfer-kb \
+  --preset stat-transfer \
+  --discipline "statistical transfer learning" \
+  --output-language bilingual \
+  --math-level heavy
+```
 
 ## Workflow Coverage
 

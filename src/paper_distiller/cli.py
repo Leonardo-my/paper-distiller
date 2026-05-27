@@ -9,6 +9,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from .config import DistillationConfig, load_config, save_config
 from .constants import CATEGORIES
 from .llm import build_backend
 from .metadata import ensure_metadata_files, mark_human_verified, read_status, upsert_status
@@ -31,6 +32,31 @@ def _validate_category(category: str) -> str:
     if category not in CATEGORIES:
         raise typer.BadParameter(f"category must be one of: {', '.join(CATEGORIES)}")
     return category
+
+
+def _load_profile(
+    paths: KnowledgeBasePaths,
+    *,
+    preset: str | None = None,
+    discipline: str | None = None,
+    source_language: str | None = None,
+    output_language: str | None = None,
+    depth: str | None = None,
+    audience: str | None = None,
+    math_level: str | None = None,
+) -> DistillationConfig:
+    try:
+        return load_config(paths.config_file).with_overrides(
+            preset=preset,
+            discipline=discipline,
+            source_language=source_language,
+            output_language=output_language,
+            depth=depth,
+            audience=audience,
+            math_level=math_level,
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
 
 
 def _extract_all(paths: KnowledgeBasePaths, force: bool = False) -> tuple[int, int]:
@@ -81,6 +107,7 @@ def _distill_many(
     backend: str,
     model: str | None,
     llm_command: str | None,
+    config: DistillationConfig,
     force: bool,
 ) -> int:
     total_written = 0
@@ -92,7 +119,7 @@ def _distill_many(
             model=model,
             llm_command=llm_command,
         )
-        written = distill_paper(paths, paper, llm, force=force)
+        written = distill_paper(paths, paper, llm, config=config, force=force)
         total_written += len(written)
     return total_written
 
@@ -100,7 +127,16 @@ def _distill_many(
 @app.command()
 def init(
     root: Annotated[Path, typer.Argument(help="Knowledge-base directory to create.")],
-    preset: Annotated[str, typer.Option(help="Prompt preset to install.")] = "stat_transfer",
+    preset: Annotated[str, typer.Option(help="Prompt preset to install.")] = "generic",
+    discipline: Annotated[str, typer.Option(help="Discipline profile, e.g. biology.")] = "general",
+    source_language: Annotated[str, typer.Option(help="auto, en, or zh.")] = "auto",
+    output_language: Annotated[
+        str,
+        typer.Option(help="en, zh, bilingual, or same-as-source."),
+    ] = "en",
+    depth: Annotated[str, typer.Option(help="short, standard, or deep.")] = "standard",
+    audience: Annotated[str, typer.Option(help="Target reader profile.")] = "researcher",
+    math_level: Annotated[str, typer.Option(help="auto, none, light, or heavy.")] = "auto",
     force: Annotated[bool, typer.Option(help="Overwrite existing prompt templates.")] = False,
 ) -> None:
     """Create a knowledge-base layout and install prompt templates."""
@@ -108,8 +144,26 @@ def init(
     paths = _paths(root)
     paths.ensure_layout()
     ensure_metadata_files(paths.metadata_dir)
-    copy_preset_templates(preset, paths.prompts_dir, force=force)
+    try:
+        config = DistillationConfig(
+            preset=preset,
+            discipline=discipline,
+            source_language=source_language,
+            output_language=output_language,
+            depth=depth,
+            audience=audience,
+            math_level=math_level,
+        ).normalized()
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    save_config(paths.config_file, config)
+    copy_preset_templates(config.preset, paths.prompts_dir, force=force)
     console.print(f"[green]Initialized[/green] {paths.root}")
+    console.print(
+        f"[green]Profile[/green] preset={config.preset}, discipline={config.discipline}, "
+        f"output_language={config.output_language}, depth={config.depth}, "
+        f"math_level={config.math_level}"
+    )
 
 
 @app.command()
@@ -140,6 +194,12 @@ def distill(
         str | None,
         typer.Option(help="Command for the command backend. Reads prompt from stdin."),
     ] = None,
+    discipline: Annotated[str | None, typer.Option(help="Override project discipline.")] = None,
+    source_language: Annotated[str | None, typer.Option(help="Override source language.")] = None,
+    output_language: Annotated[str | None, typer.Option(help="Override output language.")] = None,
+    depth: Annotated[str | None, typer.Option(help="Override depth.")] = None,
+    audience: Annotated[str | None, typer.Option(help="Override target reader profile.")] = None,
+    math_level: Annotated[str | None, typer.Option(help="Override math level.")] = None,
     force: Annotated[bool, typer.Option(help="Overwrite existing output files.")] = False,
 ) -> None:
     """Generate Markdown outputs for one paper."""
@@ -147,6 +207,15 @@ def distill(
     category = _validate_category(category)
     paths = _paths(root)
     ensure_metadata_files(paths.metadata_dir)
+    config = _load_profile(
+        paths,
+        discipline=discipline,
+        source_language=source_language,
+        output_language=output_language,
+        depth=depth,
+        audience=audience,
+        math_level=math_level,
+    )
     paper = PaperId(category=category, stem=stem)
     llm = build_backend(
         backend,
@@ -154,7 +223,7 @@ def distill(
         model=model,
         llm_command=llm_command,
     )
-    written = distill_paper(paths, paper, llm, force=force)
+    written = distill_paper(paths, paper, llm, config=config, force=force)
     for path in written:
         console.print(f"[green]Wrote[/green] {path}")
     if not written:
@@ -176,6 +245,12 @@ def distill_batch(
         str | None,
         typer.Option(help="Command for the command backend. Reads prompt from stdin."),
     ] = None,
+    discipline: Annotated[str | None, typer.Option(help="Override project discipline.")] = None,
+    source_language: Annotated[str | None, typer.Option(help="Override source language.")] = None,
+    output_language: Annotated[str | None, typer.Option(help="Override output language.")] = None,
+    depth: Annotated[str | None, typer.Option(help="Override depth.")] = None,
+    audience: Annotated[str | None, typer.Option(help="Override target reader profile.")] = None,
+    math_level: Annotated[str | None, typer.Option(help="Override math level.")] = None,
     force: Annotated[bool, typer.Option(help="Overwrite existing output files.")] = False,
     limit: Annotated[int | None, typer.Option(help="Maximum number of papers to process.")] = None,
     synthesize: Annotated[
@@ -188,6 +263,15 @@ def distill_batch(
 
     paths = _paths(root)
     ensure_metadata_files(paths.metadata_dir)
+    config = _load_profile(
+        paths,
+        discipline=discipline,
+        source_language=source_language,
+        output_language=output_language,
+        depth=depth,
+        audience=audience,
+        math_level=math_level,
+    )
     papers = _find_extracted_papers(paths, category=category, limit=limit)
 
     if not papers:
@@ -200,6 +284,7 @@ def distill_batch(
         backend=backend,
         model=model,
         llm_command=llm_command,
+        config=config,
         force=force,
     )
     console.print(f"[green]Batch complete.[/green] Wrote {total_written} file(s).")
@@ -217,6 +302,7 @@ def distill_batch(
             batch_id=batch_id,
             category=synthesis_category,
             backend=llm,
+            config=config,
             force=force,
         )
         for path in written:
@@ -234,6 +320,12 @@ def synthesize(
         str | None,
         typer.Option(help="Command for the command backend. Reads prompt from stdin."),
     ] = None,
+    discipline: Annotated[str | None, typer.Option(help="Override project discipline.")] = None,
+    source_language: Annotated[str | None, typer.Option(help="Override source language.")] = None,
+    output_language: Annotated[str | None, typer.Option(help="Override output language.")] = None,
+    depth: Annotated[str | None, typer.Option(help="Override depth.")] = None,
+    audience: Annotated[str | None, typer.Option(help="Override target reader profile.")] = None,
+    math_level: Annotated[str | None, typer.Option(help="Override math level.")] = None,
     force: Annotated[bool, typer.Option(help="Overwrite existing synthesis files.")] = False,
 ) -> None:
     """Generate cross-paper synthesis files from existing notes."""
@@ -241,6 +333,15 @@ def synthesize(
     category = _validate_category(category)
     paths = _paths(root)
     ensure_metadata_files(paths.metadata_dir)
+    config = _load_profile(
+        paths,
+        discipline=discipline,
+        source_language=source_language,
+        output_language=output_language,
+        depth=depth,
+        audience=audience,
+        math_level=math_level,
+    )
     llm = build_backend(
         backend,
         target_name=f"synthesis/{batch_id}",
@@ -252,6 +353,7 @@ def synthesize(
         batch_id=batch_id,
         category=category,
         backend=llm,
+        config=config,
         force=force,
     )
     for path in written:
@@ -265,13 +367,19 @@ def run(
         str | None,
         typer.Option(help="Only process one category: A_core, B_related, or C_background."),
     ] = None,
-    preset: Annotated[str, typer.Option(help="Prompt preset to install/update.")] = "stat-transfer",
+    preset: Annotated[str | None, typer.Option(help="Prompt preset to install/update.")] = None,
     backend: Annotated[str, typer.Option(help="offline, command, or openai.")] = "offline",
     model: Annotated[str | None, typer.Option(help="Model name for the openai backend.")] = None,
     llm_command: Annotated[
         str | None,
         typer.Option(help="Command for the command backend. Reads prompt from stdin."),
     ] = None,
+    discipline: Annotated[str | None, typer.Option(help="Override project discipline.")] = None,
+    source_language: Annotated[str | None, typer.Option(help="Override source language.")] = None,
+    output_language: Annotated[str | None, typer.Option(help="Override output language.")] = None,
+    depth: Annotated[str | None, typer.Option(help="Override depth.")] = None,
+    audience: Annotated[str | None, typer.Option(help="Override target reader profile.")] = None,
+    math_level: Annotated[str | None, typer.Option(help="Override math level.")] = None,
     force: Annotated[bool, typer.Option(help="Overwrite extracted/generated files.")] = False,
     synthesize: Annotated[
         bool,
@@ -285,7 +393,17 @@ def run(
     paths = _paths(root)
     paths.ensure_layout()
     ensure_metadata_files(paths.metadata_dir)
-    copy_preset_templates(preset, paths.prompts_dir, force=force)
+    config = _load_profile(
+        paths,
+        preset=preset,
+        discipline=discipline,
+        source_language=source_language,
+        output_language=output_language,
+        depth=depth,
+        audience=audience,
+        math_level=math_level,
+    )
+    copy_preset_templates(config.preset, paths.prompts_dir, force=force)
 
     done, skipped = _extract_all(paths, force=force)
     console.print(f"[green]Extracted[/green] {done} paper(s); skipped {skipped}.")
@@ -301,6 +419,7 @@ def run(
         backend=backend,
         model=model,
         llm_command=llm_command,
+        config=config,
         force=force,
     )
     console.print(f"[green]Distillation complete.[/green] Wrote {total_written} file(s).")
@@ -318,6 +437,7 @@ def run(
             batch_id=batch_id,
             category=synthesis_category,
             backend=llm,
+            config=config,
             force=force,
         )
         for path in written:

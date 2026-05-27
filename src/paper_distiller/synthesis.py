@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from .config import DistillationConfig
 from .llm import LlmBackend
 from .paths import KnowledgeBasePaths
 from .templates import render_template
@@ -92,6 +93,7 @@ def generate_synthesis(
     batch_id: str,
     category: str,
     backend: LlmBackend,
+    config: DistillationConfig | None = None,
     force: bool = False,
     max_chars_per_file: int = 25000,
 ) -> list[Path]:
@@ -105,6 +107,7 @@ def generate_synthesis(
 
     written: list[Path] = []
     generated_synthesis: dict[str, str] = {}
+    prompt_profile = (config or DistillationConfig()).to_template_context()
     for spec in synthesis_specs(paths, batch_id):
         if spec.output_path.exists() and not force:
             generated_synthesis[spec.name] = spec.output_path.read_text(
@@ -123,6 +126,7 @@ def generate_synthesis(
             category=category,
             source_files=sources,
             generated_synthesis=generated_synthesis,
+            **prompt_profile,
         )
         content = backend.complete(prompt)
         spec.output_path.parent.mkdir(parents=True, exist_ok=True)
