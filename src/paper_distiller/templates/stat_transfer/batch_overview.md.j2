@@ -1,0 +1,32 @@
+# Batch Overview: {{ batch_id }}
+
+Create a cross-paper overview for `{{ category }}` papers.
+
+## Rules
+
+- Every cross-paper claim must cite the supporting source file names.
+- Distinguish confirmed facts, AI-audited facts, and inferred patterns.
+- Do not assume introduction summaries are complete; check formal assumptions
+  when source files include them.
+- If settings are incommensurable, say so instead of forcing comparison.
+- Include `Reliability / Verification status` for each major section.
+
+## Required Structure
+
+1. Batch scope and source inventory
+2. Paper clusters
+3. Transfer mechanism taxonomy
+4. Cross-reference guide
+5. Main reusable takeaways
+6. Reliability notes
+
+## Source Files
+
+{% for path, content in source_files.items() %}
+### {{ path }}
+
+```markdown
+{{ content }}
+```
+
+{% endfor %}

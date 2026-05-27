@@ -88,6 +88,24 @@ class KnowledgeBasePaths:
     def audit_report(self, paper: PaperId) -> Path:
         return self.notes_dir / "verification" / paper.category / f"{paper.stem}-audit.md"
 
+    def batch_overview(self, batch_id: str) -> Path:
+        return self.notes_dir / "topic_maps" / "batches" / f"{batch_id}_overview.md"
+
+    def batch_theorem_comparison(self, batch_id: str) -> Path:
+        return self.notes_dir / "topic_maps" / "batches" / f"{batch_id}_theorem_comparison.md"
+
+    def batch_assumption_map(self, batch_id: str) -> Path:
+        return self.notes_dir / "topic_maps" / "batches" / f"{batch_id}_assumption_map.md"
+
+    def batch_proof_technique_map(self, batch_id: str) -> Path:
+        return self.notes_dir / "topic_maps" / "batches" / f"{batch_id}_proof_technique_map.md"
+
+    def batch_gap_list(self, batch_id: str) -> Path:
+        return self.notes_dir / "research_gaps" / f"{batch_id}_gap_list.md"
+
+    def batch_synthesis_audit(self, batch_id: str) -> Path:
+        return self.notes_dir / "verification" / f"{batch_id}_synthesis_audit.md"
+
     def ensure_layout(self) -> None:
         for base in (self.raw_dir, self.text_dir):
             for category in CATEGORIES:

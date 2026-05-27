@@ -10,6 +10,18 @@ paper-distiller distill . A_core example-paper --backend offline
 paper-distiller check .
 ```
 
+End-to-end after placing PDFs:
+
+```bash
+paper-distiller run . --category A_core --backend offline
+```
+
+Batch synthesis after several `A_core` papers have been distilled:
+
+```bash
+paper-distiller synthesize . batch_01 --category A_core --backend offline
+```
+
 Use these PDF names for a paper with supplementary material:
 
 ```text

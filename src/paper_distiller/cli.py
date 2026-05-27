@@ -15,6 +15,7 @@ from .metadata import ensure_metadata_files, mark_human_verified, read_status, u
 from .paths import KnowledgeBasePaths, PaperId
 from .pdf import extract_group_text, scan_pdf_groups
 from .pipeline import distill_paper
+from .synthesis import generate_synthesis
 from .templates import copy_preset_templates
 from .validators import check_kb
 
@@ -30,6 +31,70 @@ def _validate_category(category: str) -> str:
     if category not in CATEGORIES:
         raise typer.BadParameter(f"category must be one of: {', '.join(CATEGORIES)}")
     return category
+
+
+def _extract_all(paths: KnowledgeBasePaths, force: bool = False) -> tuple[int, int]:
+    paths.ensure_layout()
+    ensure_metadata_files(paths.metadata_dir)
+    groups = scan_pdf_groups(paths.raw_dir)
+    done = 0
+    skipped = 0
+    for group in groups:
+        text_path = paths.text_file(group.paper)
+        if text_path.exists() and not force:
+            skipped += 1
+            continue
+        text_path.parent.mkdir(parents=True, exist_ok=True)
+        text_path.write_text(extract_group_text(group), encoding="utf-8")
+        upsert_status(
+            paths.reading_status_csv,
+            group.paper.raw_file_name,
+            {"extracted": True, "human_verified": False},
+        )
+        done += 1
+    return done, skipped
+
+
+def _find_extracted_papers(
+    paths: KnowledgeBasePaths,
+    category: str | None = None,
+    limit: int | None = None,
+) -> list[PaperId]:
+    categories = [_validate_category(category)] if category else list(CATEGORIES)
+    papers: list[PaperId] = []
+
+    for current_category in categories:
+        text_dir = paths.text_dir / current_category
+        if not text_dir.exists():
+            continue
+        for text_file in sorted(text_dir.glob("*.txt")):
+            papers.append(PaperId(category=current_category, stem=text_file.stem))
+
+    if limit is not None:
+        return papers[:limit]
+    return papers
+
+
+def _distill_many(
+    paths: KnowledgeBasePaths,
+    papers: list[PaperId],
+    backend: str,
+    model: str | None,
+    llm_command: str | None,
+    force: bool,
+) -> int:
+    total_written = 0
+    for index, paper in enumerate(papers, start=1):
+        console.print(f"[cyan][{index}/{len(papers)}][/cyan] {paper.category}/{paper.stem}")
+        llm = build_backend(
+            backend,
+            target_name=f"{paper.category}/{paper.stem}",
+            model=model,
+            llm_command=llm_command,
+        )
+        written = distill_paper(paths, paper, llm, force=force)
+        total_written += len(written)
+    return total_written
 
 
 @app.command()
@@ -55,29 +120,12 @@ def extract(
     """Extract text from all PDFs under papers/raw."""
 
     paths = _paths(root)
-    paths.ensure_layout()
-    ensure_metadata_files(paths.metadata_dir)
     groups = scan_pdf_groups(paths.raw_dir)
     if not groups:
         console.print("[yellow]No PDFs found.[/yellow]")
         return
 
-    done = 0
-    skipped = 0
-    for group in groups:
-        text_path = paths.text_file(group.paper)
-        if text_path.exists() and not force:
-            skipped += 1
-            continue
-        text_path.parent.mkdir(parents=True, exist_ok=True)
-        text_path.write_text(extract_group_text(group), encoding="utf-8")
-        upsert_status(
-            paths.reading_status_csv,
-            group.paper.raw_file_name,
-            {"extracted": True, "human_verified": False},
-        )
-        done += 1
-
+    done, skipped = _extract_all(paths, force=force)
     console.print(f"[green]Extracted[/green] {done} paper(s); skipped {skipped}.")
 
 
@@ -130,41 +178,158 @@ def distill_batch(
     ] = None,
     force: Annotated[bool, typer.Option(help="Overwrite existing output files.")] = False,
     limit: Annotated[int | None, typer.Option(help="Maximum number of papers to process.")] = None,
+    synthesize: Annotated[
+        bool,
+        typer.Option(help="Generate cross-paper synthesis files after distillation."),
+    ] = False,
+    batch_id: Annotated[str, typer.Option(help="Batch id for synthesis outputs.")] = "batch_01",
 ) -> None:
     """Generate Markdown outputs for all extracted text files."""
 
     paths = _paths(root)
     ensure_metadata_files(paths.metadata_dir)
-    categories = [_validate_category(category)] if category else list(CATEGORIES)
-    papers: list[PaperId] = []
-
-    for current_category in categories:
-        text_dir = paths.text_dir / current_category
-        if not text_dir.exists():
-            continue
-        for text_file in sorted(text_dir.glob("*.txt")):
-            papers.append(PaperId(category=current_category, stem=text_file.stem))
-
-    if limit is not None:
-        papers = papers[:limit]
+    papers = _find_extracted_papers(paths, category=category, limit=limit)
 
     if not papers:
         console.print("[yellow]No extracted text files found.[/yellow]")
         return
 
-    total_written = 0
-    for index, paper in enumerate(papers, start=1):
-        console.print(f"[cyan][{index}/{len(papers)}][/cyan] {paper.category}/{paper.stem}")
+    total_written = _distill_many(
+        paths,
+        papers,
+        backend=backend,
+        model=model,
+        llm_command=llm_command,
+        force=force,
+    )
+    console.print(f"[green]Batch complete.[/green] Wrote {total_written} file(s).")
+
+    if synthesize:
+        synthesis_category = category or "A_core"
         llm = build_backend(
             backend,
-            target_name=f"{paper.category}/{paper.stem}",
+            target_name=f"synthesis/{batch_id}",
             model=model,
             llm_command=llm_command,
         )
-        written = distill_paper(paths, paper, llm, force=force)
-        total_written += len(written)
+        written = generate_synthesis(
+            paths,
+            batch_id=batch_id,
+            category=synthesis_category,
+            backend=llm,
+            force=force,
+        )
+        for path in written:
+            console.print(f"[green]Wrote synthesis[/green] {path}")
 
-    console.print(f"[green]Batch complete.[/green] Wrote {total_written} file(s).")
+
+@app.command()
+def synthesize(
+    root: Annotated[Path, typer.Argument(help="Knowledge-base directory.")],
+    batch_id: Annotated[str, typer.Argument(help="Example: batch_01")],
+    category: Annotated[str, typer.Option(help="Category to synthesize.")] = "A_core",
+    backend: Annotated[str, typer.Option(help="offline, command, or openai.")] = "offline",
+    model: Annotated[str | None, typer.Option(help="Model name for the openai backend.")] = None,
+    llm_command: Annotated[
+        str | None,
+        typer.Option(help="Command for the command backend. Reads prompt from stdin."),
+    ] = None,
+    force: Annotated[bool, typer.Option(help="Overwrite existing synthesis files.")] = False,
+) -> None:
+    """Generate cross-paper synthesis files from existing notes."""
+
+    category = _validate_category(category)
+    paths = _paths(root)
+    ensure_metadata_files(paths.metadata_dir)
+    llm = build_backend(
+        backend,
+        target_name=f"synthesis/{batch_id}",
+        model=model,
+        llm_command=llm_command,
+    )
+    written = generate_synthesis(
+        paths,
+        batch_id=batch_id,
+        category=category,
+        backend=llm,
+        force=force,
+    )
+    for path in written:
+        console.print(f"[green]Wrote synthesis[/green] {path}")
+
+
+@app.command()
+def run(
+    root: Annotated[Path, typer.Argument(help="Knowledge-base directory.")],
+    category: Annotated[
+        str | None,
+        typer.Option(help="Only process one category: A_core, B_related, or C_background."),
+    ] = None,
+    preset: Annotated[str, typer.Option(help="Prompt preset to install/update.")] = "stat-transfer",
+    backend: Annotated[str, typer.Option(help="offline, command, or openai.")] = "offline",
+    model: Annotated[str | None, typer.Option(help="Model name for the openai backend.")] = None,
+    llm_command: Annotated[
+        str | None,
+        typer.Option(help="Command for the command backend. Reads prompt from stdin."),
+    ] = None,
+    force: Annotated[bool, typer.Option(help="Overwrite extracted/generated files.")] = False,
+    synthesize: Annotated[
+        bool,
+        typer.Option(help="Generate cross-paper synthesis files after distillation."),
+    ] = False,
+    batch_id: Annotated[str, typer.Option(help="Batch id for synthesis outputs.")] = "batch_01",
+    limit: Annotated[int | None, typer.Option(help="Maximum number of papers to process.")] = None,
+) -> None:
+    """Run init, extract, distill, optional synthesis, and structural checks."""
+
+    paths = _paths(root)
+    paths.ensure_layout()
+    ensure_metadata_files(paths.metadata_dir)
+    copy_preset_templates(preset, paths.prompts_dir, force=force)
+
+    done, skipped = _extract_all(paths, force=force)
+    console.print(f"[green]Extracted[/green] {done} paper(s); skipped {skipped}.")
+
+    papers = _find_extracted_papers(paths, category=category, limit=limit)
+    if not papers:
+        console.print("[yellow]No extracted text files found.[/yellow]")
+        return
+
+    total_written = _distill_many(
+        paths,
+        papers,
+        backend=backend,
+        model=model,
+        llm_command=llm_command,
+        force=force,
+    )
+    console.print(f"[green]Distillation complete.[/green] Wrote {total_written} file(s).")
+
+    if synthesize:
+        synthesis_category = category or "A_core"
+        llm = build_backend(
+            backend,
+            target_name=f"synthesis/{batch_id}",
+            model=model,
+            llm_command=llm_command,
+        )
+        written = generate_synthesis(
+            paths,
+            batch_id=batch_id,
+            category=synthesis_category,
+            backend=llm,
+            force=force,
+        )
+        for path in written:
+            console.print(f"[green]Wrote synthesis[/green] {path}")
+
+    issues = check_kb(paths)
+    if issues:
+        console.print(
+            "[yellow]Structural check found issues. Run `paper-distiller check`.[/yellow]"
+        )
+    else:
+        console.print("[green]Structural check passed.[/green]")
 
 
 @app.command()

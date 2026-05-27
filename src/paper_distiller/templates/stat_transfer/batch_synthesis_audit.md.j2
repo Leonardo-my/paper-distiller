@@ -1,0 +1,48 @@
+# Synthesis Audit: {{ batch_id }}
+
+Audit the cross-paper synthesis files. Be skeptical.
+
+## Audit Rules
+
+- Find over-confirmed claims.
+- Flag inferred patterns presented as confirmed facts.
+- Flag forced comparisons across incomparable settings.
+- Check whether each cross-paper claim cites source files.
+- Check whether reliability labels are present and reasonable.
+
+## Required Structure
+
+1. Overall verdict
+2. Critical errors
+3. Major issues
+4. Minor issues
+5. Cross-paper claim audit
+6. Incomparability audit
+7. Gap overclaim audit
+8. Formula/rate comparison audit
+9. Required revisions
+10. Human verification needed
+11. Safe to keep
+12. Revision log
+
+## Generated Synthesis Files
+
+{% for path, content in generated_synthesis.items() %}
+### {{ path }}
+
+```markdown
+{{ content }}
+```
+
+{% endfor %}
+
+## Single-Paper Source Files
+
+{% for path, content in source_files.items() %}
+### {{ path }}
+
+```markdown
+{{ content }}
+```
+
+{% endfor %}

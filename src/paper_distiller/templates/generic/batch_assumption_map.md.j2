@@ -1,0 +1,14 @@
+# Assumption Map: {{ batch_id }}
+
+Map formal assumptions across papers. Cite source files.
+
+## Source Files
+
+{% for path, content in source_files.items() %}
+### {{ path }}
+
+```markdown
+{{ content }}
+```
+
+{% endfor %}

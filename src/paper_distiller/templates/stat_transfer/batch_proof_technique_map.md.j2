@@ -1,0 +1,32 @@
+# Proof Technique Map: {{ batch_id }}
+
+Map proof techniques across `{{ category }}` papers.
+
+## Rules
+
+- Do not attribute Fano, Assouad, Le Cam, RMT, resolvent identities, or named
+  inequalities unless source files explicitly support the attribution.
+- If inferred, write `likely / standard, needs appendix check`.
+- Distinguish proof roadmaps from citable formal proofs.
+- Cite source file names for every technique assignment.
+- Include `Reliability / Verification status` for each major section.
+
+## Required Structure
+
+1. Technique x paper matrix
+2. Technique clusters
+3. Paper-specific proof innovations
+4. Standard reusable proof patterns
+5. Appendix/PDF verification queue
+6. Reliability notes
+
+## Source Files
+
+{% for path, content in source_files.items() %}
+### {{ path }}
+
+```markdown
+{{ content }}
+```
+
+{% endfor %}

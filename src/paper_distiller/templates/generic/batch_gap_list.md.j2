@@ -1,0 +1,15 @@
+# Candidate Research Gaps: {{ batch_id }}
+
+Identify batch-local candidate gaps. Do not claim field-level novelty without
+external validation.
+
+## Source Files
+
+{% for path, content in source_files.items() %}
+### {{ path }}
+
+```markdown
+{{ content }}
+```
+
+{% endfor %}

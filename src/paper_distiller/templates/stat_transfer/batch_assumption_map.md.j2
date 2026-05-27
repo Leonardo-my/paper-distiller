@@ -1,0 +1,32 @@
+# Assumption Map: {{ batch_id }}
+
+Map formal assumptions across `{{ category }}` papers.
+
+## Rules
+
+- Prefer formal numbered assumptions over introduction-level summaries.
+- Separate design assumptions, sparsity assumptions, similarity assumptions,
+  moment/tail assumptions, and source-selection assumptions.
+- Do not force binary labels when a paper has a more nuanced condition.
+- Cite source file names for every cell or claim.
+- Include `Reliability / Verification status` for each major section.
+
+## Required Structure
+
+1. Paper x assumption matrix
+2. Similarity/transfer assumptions
+3. Source-target design assumptions
+4. Negative-transfer/source-selection assumptions
+5. Assumption conflicts and incompatibilities
+6. Reliability notes
+
+## Source Files
+
+{% for path, content in source_files.items() %}
+### {{ path }}
+
+```markdown
+{{ content }}
+```
+
+{% endfor %}

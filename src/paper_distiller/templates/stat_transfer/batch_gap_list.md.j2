@@ -1,0 +1,33 @@
+# Candidate Research Gaps: {{ batch_id }}
+
+Identify batch-local candidate research gaps from `{{ category }}` papers.
+
+## Rules
+
+- Gaps are batch-local candidates, not field-level confirmed gaps.
+- Every gap must cite supporting source files.
+- Separate confirmed absence in this batch from inferred opportunity.
+- Include falsification risks and adjacent literatures that may close the gap.
+- Do not overstate novelty.
+- Include `Reliability / Verification status` for each major section.
+
+## Required Structure
+
+1. Candidate gap tracker table
+2. High-priority gaps
+3. Medium-priority gaps
+4. Gaps weakened by existing evidence
+5. Validation search plan
+6. How each gap could help a future paper
+7. Reliability notes
+
+## Source Files
+
+{% for path, content in source_files.items() %}
+### {{ path }}
+
+```markdown
+{{ content }}
+```
+
+{% endfor %}

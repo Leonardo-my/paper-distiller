@@ -1,0 +1,25 @@
+# Synthesis Audit: {{ batch_id }}
+
+Audit the generated cross-paper synthesis against source files.
+
+## Generated Synthesis Files
+
+{% for path, content in generated_synthesis.items() %}
+### {{ path }}
+
+```markdown
+{{ content }}
+```
+
+{% endfor %}
+
+## Single-Paper Source Files
+
+{% for path, content in source_files.items() %}
+### {{ path }}
+
+```markdown
+{{ content }}
+```
+
+{% endfor %}

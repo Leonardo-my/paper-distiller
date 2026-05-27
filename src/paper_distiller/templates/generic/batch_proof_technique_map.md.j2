@@ -1,0 +1,14 @@
+# Proof Technique Map: {{ batch_id }}
+
+Map proof techniques across papers. Mark inferred techniques as uncertain.
+
+## Source Files
+
+{% for path, content in source_files.items() %}
+### {{ path }}
+
+```markdown
+{{ content }}
+```
+
+{% endfor %}

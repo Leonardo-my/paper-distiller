@@ -1,0 +1,33 @@
+# Theorem Comparison: {{ batch_id }}
+
+Compare theorem/rate structures across `{{ category }}` papers.
+
+## Rules
+
+- Preserve each paper's result type: upper bound, lower bound, asymptotic
+  limit, consistency, optimality, or oracle optimality.
+- Do not compare rates across incompatible settings without an incomparability
+  warning.
+- Cite source file names for every theorem/rate claim.
+- Mark uncertain formulas as `needs PDF check`.
+- Include `Reliability / Verification status` for each major section.
+
+## Required Structure
+
+1. Theorem inventory table
+2. Rate comparison table
+3. Minimax/lower-bound status
+4. Rate structure patterns
+5. Incomparability warnings
+6. Open theorem-level questions
+
+## Source Files
+
+{% for path, content in source_files.items() %}
+### {{ path }}
+
+```markdown
+{{ content }}
+```
+
+{% endfor %}
