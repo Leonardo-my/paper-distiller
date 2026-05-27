@@ -63,6 +63,18 @@ my-kb/papers/raw/B_related/
 my-kb/papers/raw/C_background/
 ```
 
+For example:
+
+```text
+my-kb/papers/raw/A_core/my-paper.pdf
+my-kb/papers/raw/A_core/my-paper_Supplement.pdf
+```
+
+`my-paper.pdf` and `my-paper_Supplement.pdf` are treated as one paper. The
+paper stem used in commands is `my-paper`.
+
+Scanned image PDFs need OCR before Paper Distiller can extract useful text.
+
 Extract text:
 
 ```bash
@@ -83,8 +95,17 @@ paper-distiller distill-batch ./my-kb --category A_core --backend offline
 
 Generate with OpenAI:
 
+PowerShell:
+
+```powershell
+$env:OPENAI_API_KEY="..."
+paper-distiller distill ./my-kb A_core my-paper --backend openai --model gpt-5.5
+```
+
+Bash:
+
 ```bash
-set OPENAI_API_KEY=...
+export OPENAI_API_KEY="..."
 paper-distiller distill ./my-kb A_core my-paper --backend openai --model gpt-5.5
 ```
 
@@ -114,6 +135,9 @@ For a batch that should also produce cross-paper synthesis:
 ```bash
 paper-distiller run ./my-kb --category A_core --backend openai --model gpt-5.5 --synthesize --batch-id batch_01
 ```
+
+Synthesis is intended for multiple already-distilled papers. It can run with a
+single paper, but the cross-paper comparisons will not be meaningful.
 
 The CLI is not a background folder watcher. Users explicitly run the command
 after adding PDFs, which keeps API usage and generated files predictable.
