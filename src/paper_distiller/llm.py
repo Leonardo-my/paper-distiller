@@ -8,6 +8,8 @@ import subprocess
 from dataclasses import dataclass
 from typing import Protocol
 
+OPENAI_MODEL_ENV = "PAPER_DISTILLER_OPENAI_MODEL"
+
 
 class LlmBackend(Protocol):
     def complete(self, prompt: str) -> str:
@@ -91,5 +93,11 @@ def build_backend(
             raise ValueError("--llm-command is required for the command backend")
         return CommandBackend(command=llm_command)
     if backend == "openai":
-        return OpenAIBackend(model=model or "gpt-5.5")
+        resolved_model = model or os.environ.get(OPENAI_MODEL_ENV)
+        if not resolved_model:
+            raise ValueError(
+                "OpenAI backend requires --model or the "
+                f"{OPENAI_MODEL_ENV} environment variable"
+            )
+        return OpenAIBackend(model=resolved_model)
     raise ValueError(f"Unknown backend: {backend}")

@@ -1,7 +1,7 @@
 # Paper Distiller
 
-Paper Distiller is a Python CLI framework for turning research papers into a
-structured Markdown knowledge base.
+Paper Distiller is a local Web UI and Python CLI for turning research papers
+into a structured Markdown knowledge base.
 
 It is designed for workflows where an LLM drafts notes, theorem cards, proof
 roadmaps, writing-pattern cards, and audit reports, while the software enforces
@@ -101,18 +101,20 @@ paper-distiller distill-batch ./my-kb --category A_core --backend offline
 
 Generate with OpenAI:
 
+Replace `YOUR_MODEL_NAME` with a model available in your OpenAI account.
+
 PowerShell:
 
 ```powershell
 $env:OPENAI_API_KEY="..."
-paper-distiller distill ./my-kb A_core my-paper --backend openai --model gpt-5.5
+paper-distiller distill ./my-kb A_core my-paper --backend openai --model YOUR_MODEL_NAME
 ```
 
 Bash:
 
 ```bash
 export OPENAI_API_KEY="..."
-paper-distiller distill ./my-kb A_core my-paper --backend openai --model gpt-5.5
+paper-distiller distill ./my-kb A_core my-paper --backend openai --model YOUR_MODEL_NAME
 ```
 
 Or use any local command that reads a prompt from stdin and prints Markdown:
@@ -145,6 +147,12 @@ Launch:
 paper-distiller-ui
 ```
 
+For a terminal-only launch that does not open the browser automatically:
+
+```bash
+paper-distiller-ui --headless
+```
+
 The browser UI lets users:
 
 - choose a knowledge-base folder;
@@ -158,18 +166,21 @@ The browser UI lets users:
 The UI is a local convenience layer, not a hosted SaaS. API keys entered in the
 sidebar are set only for the current local process.
 
+See [docs/local-web-ui.md](docs/local-web-ui.md) for a non-developer walkthrough,
+including ZIP installation.
+
 ## One-Command Workflow
 
 After initialization, users can place PDFs under `papers/raw/...` and run:
 
 ```bash
-paper-distiller run ./my-kb --category A_core --backend openai --model gpt-5.5
+paper-distiller run ./my-kb --category A_core --backend openai --model YOUR_MODEL_NAME
 ```
 
 For a batch that should also produce cross-paper synthesis:
 
 ```bash
-paper-distiller run ./my-kb --category A_core --backend openai --model gpt-5.5 --synthesize --batch-id batch_01
+paper-distiller run ./my-kb --category A_core --backend openai --model YOUR_MODEL_NAME --synthesize --batch-id batch_01
 ```
 
 Synthesis is intended for multiple already-distilled papers. It can run with a
@@ -217,7 +228,7 @@ single run:
 ```bash
 paper-distiller distill ./my-kb A_core example-paper \
   --backend openai \
-  --model gpt-5.5 \
+  --model YOUR_MODEL_NAME \
   --discipline economics \
   --output-language bilingual \
   --math-level auto
@@ -253,7 +264,7 @@ paper-distiller init ./transfer-kb \
 Single `A_core` paper:
 
 ```bash
-paper-distiller distill ./my-kb A_core my-paper --backend openai --model gpt-5.5
+paper-distiller distill ./my-kb A_core my-paper --backend openai --model YOUR_MODEL_NAME
 ```
 
 Generates exactly these five files:
@@ -269,7 +280,7 @@ notes/verification/A_core/my-paper-audit.md
 Multiple `A_core` papers with synthesis:
 
 ```bash
-paper-distiller distill-batch ./my-kb --category A_core --backend openai --model gpt-5.5 --synthesize --batch-id batch_01
+paper-distiller distill-batch ./my-kb --category A_core --backend openai --model YOUR_MODEL_NAME --synthesize --batch-id batch_01
 ```
 
 Generates the five single-paper files for each paper, plus:
@@ -337,7 +348,7 @@ For an `A_core` batch synthesis, the default preset generates:
 You can also run synthesis separately after single-paper files exist:
 
 ```bash
-paper-distiller synthesize ./my-kb batch_01 --category A_core --backend openai --model gpt-5.5
+paper-distiller synthesize ./my-kb batch_01 --category A_core --backend openai --model YOUR_MODEL_NAME
 ```
 
 ## Reliability Model

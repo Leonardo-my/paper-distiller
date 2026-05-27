@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .config import DistillationConfig, load_config, save_config
 from .constants import CATEGORIES
-from .llm import build_backend
+from .llm import OPENAI_MODEL_ENV, build_backend
 from .metadata import ensure_metadata_files, read_status, upsert_status
 from .paths import KnowledgeBasePaths, PaperId
 from .pdf import extract_group_text, scan_pdf_groups
@@ -109,7 +109,11 @@ def _sidebar_backend(st: object) -> dict[str, str | None]:
     api_key = None
     command = None
     if backend == "openai":
-        model = st.sidebar.text_input("Model", value="gpt-5.5")
+        model = st.sidebar.text_input(
+            "Model",
+            value=os.environ.get(OPENAI_MODEL_ENV, ""),
+            placeholder="Required unless PAPER_DISTILLER_OPENAI_MODEL is set",
+        )
         api_key = st.sidebar.text_input("OPENAI_API_KEY", type="password")
         if api_key:
             os.environ["OPENAI_API_KEY"] = api_key
@@ -123,7 +127,7 @@ def _sidebar_backend(st: object) -> dict[str, str | None]:
 
     return {
         "backend": backend,
-        "model": model,
+        "model": model or None,
         "llm_command": command,
     }
 
