@@ -8,8 +8,12 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 
+def normalize_preset_name(preset: str) -> str:
+    return preset.replace("-", "_")
+
+
 def package_template_dir(preset: str) -> Path:
-    return Path(str(files("paper_distiller") / "templates" / preset))
+    return Path(str(files("paper_distiller") / "templates" / normalize_preset_name(preset)))
 
 
 def copy_preset_templates(preset: str, destination: Path, force: bool = False) -> None:

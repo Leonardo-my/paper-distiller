@@ -4,7 +4,7 @@ This example shows the expected project shape. It intentionally contains no
 PDFs or generated notes.
 
 ```bash
-paper-distiller init . --preset stat_transfer
+paper-distiller init . --preset stat-transfer
 paper-distiller extract .
 paper-distiller distill . A_core example-paper --backend offline
 paper-distiller check .
