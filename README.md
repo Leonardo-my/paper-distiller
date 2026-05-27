@@ -49,6 +49,12 @@ Create a knowledge base:
 paper-distiller init ./my-kb --preset generic --discipline biology --output-language en
 ```
 
+See available presets:
+
+```bash
+paper-distiller presets
+```
+
 Put PDFs here:
 
 ```text
@@ -155,6 +161,18 @@ paper-distiller distill ./my-kb A_core example-paper \
   --discipline economics \
   --output-language bilingual \
   --math-level auto
+```
+
+View or update a project profile without editing TOML:
+
+```bash
+paper-distiller profile ./my-kb
+
+paper-distiller profile ./my-kb \
+  --discipline "environmental epidemiology" \
+  --output-language bilingual \
+  --depth deep \
+  --install-templates
 ```
 
 For non-mathematical papers, the generic preset adapts theorem/proof cards into

@@ -26,6 +26,13 @@ Run the full local workflow:
 paper-distiller run . --category A_core --backend offline --synthesize
 ```
 
+View or change the profile:
+
+```bash
+paper-distiller profile .
+paper-distiller profile . --discipline "medical sociology" --output-language bilingual
+```
+
 For non-mathematical papers, `theorem_cards` and `proof_cards` become
 claim/evidence cards and method/evidence roadmaps when the prompt determines
 that theorem extraction is inappropriate.

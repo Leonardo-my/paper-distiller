@@ -17,7 +17,7 @@ from .paths import KnowledgeBasePaths, PaperId
 from .pdf import extract_group_text, scan_pdf_groups
 from .pipeline import distill_paper
 from .synthesis import generate_synthesis
-from .templates import copy_preset_templates
+from .templates import PRESET_DESCRIPTIONS, copy_preset_templates, list_package_presets
 from .validators import check_kb
 
 app = typer.Typer(no_args_is_help=True, help="Distill research papers into Markdown notes.")
@@ -124,6 +124,35 @@ def _distill_many(
     return total_written
 
 
+def _profile_table(config: DistillationConfig, config_path: Path) -> Table:
+    table = Table(title=f"Distillation Profile: {config_path}")
+    table.add_column("Field")
+    table.add_column("Value")
+    for field in (
+        "preset",
+        "discipline",
+        "source_language",
+        "output_language",
+        "depth",
+        "audience",
+        "math_level",
+    ):
+        table.add_row(field, getattr(config, field))
+    return table
+
+
+@app.command()
+def presets() -> None:
+    """List bundled prompt presets."""
+
+    table = Table(title="Bundled Presets")
+    table.add_column("Preset")
+    table.add_column("Description")
+    for preset in list_package_presets():
+        table.add_row(preset, PRESET_DESCRIPTIONS.get(preset, "Custom bundled preset."))
+    console.print(table)
+
+
 @app.command()
 def init(
     root: Annotated[Path, typer.Argument(help="Knowledge-base directory to create.")],
@@ -164,6 +193,64 @@ def init(
         f"output_language={config.output_language}, depth={config.depth}, "
         f"math_level={config.math_level}"
     )
+
+
+@app.command()
+def profile(
+    root: Annotated[Path, typer.Argument(help="Knowledge-base directory.")],
+    preset: Annotated[str | None, typer.Option(help="generic or stat-transfer.")] = None,
+    discipline: Annotated[str | None, typer.Option(help="Discipline profile.")] = None,
+    source_language: Annotated[str | None, typer.Option(help="auto, en, or zh.")] = None,
+    output_language: Annotated[
+        str | None,
+        typer.Option(help="en, zh, bilingual, or same-as-source."),
+    ] = None,
+    depth: Annotated[str | None, typer.Option(help="short, standard, or deep.")] = None,
+    audience: Annotated[str | None, typer.Option(help="Target reader profile.")] = None,
+    math_level: Annotated[str | None, typer.Option(help="auto, none, light, or heavy.")] = None,
+    install_templates: Annotated[
+        bool,
+        typer.Option(help="Install/update prompt templates for the selected preset."),
+    ] = False,
+    force: Annotated[bool, typer.Option(help="Overwrite existing prompt templates.")] = False,
+) -> None:
+    """Show or update the project distillation profile."""
+
+    paths = _paths(root)
+    paths.ensure_layout()
+    ensure_metadata_files(paths.metadata_dir)
+    config = _load_profile(
+        paths,
+        preset=preset,
+        discipline=discipline,
+        source_language=source_language,
+        output_language=output_language,
+        depth=depth,
+        audience=audience,
+        math_level=math_level,
+    )
+
+    changed = any(
+        value is not None
+        for value in (
+            preset,
+            discipline,
+            source_language,
+            output_language,
+            depth,
+            audience,
+            math_level,
+        )
+    )
+    if changed:
+        save_config(paths.config_file, config)
+        console.print(f"[green]Updated profile[/green] {paths.config_file}")
+
+    if install_templates:
+        copy_preset_templates(config.preset, paths.prompts_dir, force=force)
+        console.print(f"[green]Installed templates[/green] preset={config.preset}")
+
+    console.print(_profile_table(config, paths.config_file))
 
 
 @app.command()
